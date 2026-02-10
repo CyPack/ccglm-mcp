@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Görev Yönetim Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #fff;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            color: #a0a0a0;
+            margin-top: 10px;
+        }
+
+        .add-task-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .add-task-container input {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            width: 300px;
+            font-size: 1rem;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .add-task-container input::placeholder {
+            color: #888;
+        }
+
+        .add-task-container input:focus {
+            background: rgba(255,255,255,0.2);
+            box-shadow: 0 0 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .add-task-container button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .add-task-container button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .column {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 400px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .column-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .column-header .icon {
+            font-size: 1.5rem;
+        }
+
+        .column-header h2 {
+            color: #fff;
+            font-size: 1.2rem;
+        }
+
+        .column-header .count {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            margin-left: auto;
+        }
+
+        .tasks {
+            min-height: 300px;
+        }
+
+        .task {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: grab;
+            transition: all 0.3s;
+            border-left: 4px solid #667eea;
+        }
+
+        .task:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .task.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .task-content {
+            color: #fff;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-date {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .task-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            opacity: 0.6;
+            transition: all 0.2s;
+        }
+
+        .task-actions button:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        .column.todo .task { border-left-color: #f39c12; }
+        .column.progress .task { border-left-color: #3498db; }
+        .column.done .task { border-left-color: #27ae60; }
+
+        .column.drag-over {
+            background: rgba(102, 126, 234, 0.1);
+            border: 2px dashed #667eea;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.05);
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8rem; }
+            .add-task-container input { width: 100%; }
+            .board { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Görev Yönetim Dashboard</h1>
+        <p>Görevlerinizi sürükle-bırak ile yönetin</p>
+    </div>
+
+    <div class="add-task-container">
+        <input type="text" id="taskInput" placeholder="Yeni görev ekle..." onkeypress="handleKeyPress(event)">
+        <button onclick="addTask()">+ Ekle</button>
+    </div>
+
+    <div class="board">
+        <div class="column todo" id="todo" ondragover="allowDrop(event)" ondrop="drop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+            <div class="column-header">
+                <span class="icon">📋</span>
+                <h2>Yapılacak</h2>
+                <span class="count" id="todo-count">0</span>
+            </div>
+            <div class="tasks" id="todo-tasks"></div>
+        </div>
+
+        <div class="column progress" id="progress" ondragover="allowDrop(event)" ondrop="drop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+            <div class="column-header">
+                <span class="icon">🔄</span>
+                <h2>Devam Eden</h2>
+                <span class="count" id="progress-count">0</span>
+            </div>
+            <div class="tasks" id="progress-tasks"></div>
+        </div>
+
+        <div class="column done" id="done" ondragover="allowDrop(event)" ondrop="drop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+            <div class="column-header">
+                <span class="icon">✅</span>
+                <h2>Tamamlandı</h2>
+                <span class="count" id="done-count">0</span>
+            </div>
+            <div class="tasks" id="done-tasks"></div>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-value" id="total-tasks">0</div>
+            <div class="stat-label">Toplam Görev</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="completion-rate">0%</div>
+            <div class="stat-label">Tamamlanma</div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderAllTasks();
+            updateStats();
+        });
+
+        // Add Task
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            const task = {
+                id: Date.now(),
+                text: text,
+                status: 'todo',
+                createdAt: new Date().toLocaleDateString('tr-TR')
+            };
+
+            tasks.push(task);
+            saveTasks();
+            renderAllTasks();
+            updateStats();
+            input.value = '';
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') addTask();
+        }
+
+        // Delete Task
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveTasks();
+            renderAllTasks();
+            updateStats();
+        }
+
+        // Edit Task
+        function editTask(id) {
+            const task = tasks.find(t => t.id === id);
+            const newText = prompt('Görevi düzenle:', task.text);
+
+            if (newText && newText.trim()) {
+                task.text = newText.trim();
+                saveTasks();
+                renderAllTasks();
+            }
+        }
+
+        // Drag & Drop
+        let draggedTask = null;
+
+        function allowDrop(e) {
+            e.preventDefault();
+        }
+
+        function dragEnter(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function dragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function dragStart(e, id) {
+            draggedTask = id;
+            e.target.classList.add('dragging');
+        }
+
+        function dragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function drop(e) {
+            e.preventDefault();
+            const column = e.currentTarget;
+            column.classList.remove('drag-over');
+
+            const newStatus = column.id;
+            const task = tasks.find(t => t.id === draggedTask);
+
+            if (task) {
+                task.status = newStatus;
+                saveTasks();
+                renderAllTasks();
+                updateStats();
+            }
+        }
+
+        // Render Tasks
+        function renderAllTasks() {
+            ['todo', 'progress', 'done'].forEach(status => {
+                const container = document.getElementById(`${status}-tasks`);
+                const statusTasks = tasks.filter(t => t.status === status);
+
+                container.innerHTML = statusTasks.map(task => `
+                    <div class="task"
+                         draggable="true"
+                         ondragstart="dragStart(event, ${task.id})"
+                         ondragend="dragEnd(event)">
+                        <div class="task-content">${escapeHtml(task.text)}</div>
+                        <div class="task-meta">
+                            <span class="task-date">${task.createdAt}</span>
+                            <div class="task-actions">
+                                <button onclick="editTask(${task.id})">✏️</button>
+                                <button onclick="deleteTask(${task.id})">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById(`${status}-count`).textContent = statusTasks.length;
+            });
+        }
+
+        // Update Stats
+        function updateStats() {
+            const total = tasks.length;
+            const done = tasks.filter(t => t.status === 'done').length;
+            const rate = total > 0 ? Math.round((done / total) * 100) : 0;
+
+            document.getElementById('total-tasks').textContent = total;
+            document.getElementById('completion-rate').textContent = rate + '%';
+        }
+
+        // Save to localStorage
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

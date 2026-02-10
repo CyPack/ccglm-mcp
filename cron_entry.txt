@@ -1,0 +1,2 @@
+# Add to crontab with: crontab -e
+*/5 * * * * /home/user/IA/ccglm-mcp/health_check.sh

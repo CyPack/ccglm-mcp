@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Görev Yönetim Paneli</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #22c55e;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --border-color: #475569;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        /* Board Container */
+        .board {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            min-height: calc(100vh - 80px);
+        }
+
+        /* Column */
+        .column {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 120px);
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid;
+        }
+
+        .column-header.todo { border-color: var(--accent-orange); }
+        .column-header.inprogress { border-color: var(--accent-blue); }
+        .column-header.done { border-color: var(--accent-green); }
+
+        .column-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .task-count {
+            background: var(--bg-card);
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .column-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+            min-height: 100px;
+        }
+
+        .column-content.drag-over {
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+        }
+
+        /* Task Card */
+        .task-card {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            cursor: grab;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .task-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .task-card.priority-high { border-left-color: var(--accent-red); }
+        .task-card.priority-medium { border-left-color: var(--accent-orange); }
+        .task-card.priority-low { border-left-color: var(--accent-green); }
+
+        .task-title {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            word-wrap: break-word;
+        }
+
+        .task-description {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.8rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .task-priority {
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .priority-high { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+        .priority-medium { background: rgba(245, 158, 11, 0.2); color: var(--accent-orange); }
+        .priority-low { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); }
+
+        .task-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .task-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            padding: 0.2rem;
+        }
+
+        .task-actions button:hover {
+            color: var(--text-primary);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.3rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .board {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .column {
+                max-height: none;
+            }
+
+            .header {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>Görev Yönetim Paneli</h1>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="clearAllTasks()">Tümünü Temizle</button>
+            <button class="btn btn-primary" onclick="openModal()">+ Yeni Görev</button>
+        </div>
+    </header>
+
+    <!-- Board -->
+    <main class="board">
+        <!-- Todo Column -->
+        <div class="column" id="todo-column">
+            <div class="column-header todo">
+                <span class="column-title">Yapılacaklar</span>
+                <span class="task-count" id="todo-count">0</span>
+            </div>
+            <div class="column-content" id="todo-content" data-status="todo"></div>
+        </div>
+
+        <!-- In Progress Column -->
+        <div class="column" id="inprogress-column">
+            <div class="column-header inprogress">
+                <span class="column-title">Devam Ediyor</span>
+                <span class="task-count" id="inprogress-count">0</span>
+            </div>
+            <div class="column-content" id="inprogress-content" data-status="inprogress"></div>
+        </div>
+
+        <!-- Done Column -->
+        <div class="column" id="done-column">
+            <div class="column-header done">
+                <span class="column-title">Tamamlandı</span>
+                <span class="task-count" id="done-count">0</span>
+            </div>
+            <div class="column-content" id="done-content" data-status="done"></div>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-title">Yeni Görev</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="task-form">
+                <input type="hidden" id="task-id">
+                <div class="form-group">
+                    <label for="task-title">Başlık *</label>
+                    <input type="text" id="task-title" required placeholder="Görev başlığı">
+                </div>
+                <div class="form-group">
+                    <label for="task-description">Açıklama</label>
+                    <textarea id="task-description" placeholder="Görev açıklaması"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="task-priority">Öncelik</label>
+                    <select id="task-priority">
+                        <option value="low">Düşük</option>
+                        <option value="medium" selected>Orta</option>
+                        <option value="high">Yüksek</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let tasks = [];
+        let draggedTask = null;
+
+        // LocalStorage Functions
+        function saveToLocalStorage() {
+            localStorage.setItem('kanban-tasks', JSON.stringify(tasks));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('kanban-tasks');
+            if (saved) {
+                tasks = JSON.parse(saved);
+            } else {
+                // Demo tasks
+                tasks = [
+                    { id: Date.now() + 1, title: 'Proje araştırması yap', description: 'Teknoloji stack\'i belirle', status: 'todo', priority: 'high', createdAt: new Date().toISOString() },
+                    { id: Date.now() + 2, title: 'UI tasarımı', description: 'Mockup oluştur', status: 'inprogress', priority: 'medium', createdAt: new Date().toISOString() },
+                    { id: Date.now() + 3, title: 'Test yaz', description: 'Unit testleri tamamla', status: 'done', priority: 'low', createdAt: new Date().toISOString() }
+                ];
+                saveToLocalStorage();
+            }
+        }
+
+        // Render Functions
+        function renderTasks() {
+            const columns = ['todo', 'inprogress', 'done'];
+
+            columns.forEach(status => {
+                const content = document.getElementById(`${status}-content`);
+                const count = document.getElementById(`${status}-count`);
+                const filteredTasks = tasks.filter(t => t.status === status);
+
+                count.textContent = filteredTasks.length;
+                content.innerHTML = filteredTasks.map(task => createTaskCard(task)).join('');
+            });
+
+            setupDragAndDrop();
+        }
+
+        function createTaskCard(task) {
+            const priorityClass = `priority-${task.priority}`;
+            const priorityLabels = { low: 'Düşük', medium: 'Orta', high: 'Yüksek' };
+
+            return `
+                <div class="task-card ${priorityClass}" draggable="true" data-id="${task.id}">
+                    <div class="task-title">${escapeHtml(task.title)}</div>
+                    ${task.description ? `<div class="task-description">${escapeHtml(task.description)}</div>` : ''}
+                    <div class="task-meta">
+                        <span class="task-priority ${priorityClass}">${priorityLabels[task.priority]}</span>
+                        <div class="task-actions">
+                            <button onclick="editTask(${task.id})" title="Düzenle">✏️</button>
+                            <button onclick="deleteTask(${task.id})" title="Sil">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Modal Functions
+        function openModal(taskId = null) {
+            const overlay = document.getElementById('modal-overlay');
+            const title = document.getElementById('modal-title');
+            const form = document.getElementById('task-form');
+
+            if (taskId) {
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    title.textContent = 'Görev Düzenle';
+                    document.getElementById('task-id').value = task.id;
+                    document.getElementById('task-title').value = task.title;
+                    document.getElementById('task-description').value = task.description || '';
+                    document.getElementById('task-priority').value = task.priority;
+                }
+            } else {
+                title.textContent = 'Yeni Görev';
+                form.reset();
+                document.getElementById('task-id').value = '';
+            }
+
+            overlay.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+
+        // Task CRUD
+        function saveTask(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('task-id').value;
+            const title = document.getElementById('task-title').value.trim();
+            const description = document.getElementById('task-description').value.trim();
+            const priority = document.getElementById('task-priority').value;
+
+            if (!title) return;
+
+            if (id) {
+                // Edit existing task
+                const task = tasks.find(t => t.id === parseInt(id));
+                if (task) {
+                    task.title = title;
+                    task.description = description;
+                    task.priority = priority;
+                }
+            } else {
+                // Create new task
+                tasks.push({
+                    id: Date.now(),
+                    title,
+                    description,
+                    priority,
+                    status: 'todo',
+                    createdAt: new Date().toISOString()
+                });
+            }
+
+            saveToLocalStorage();
+            renderTasks();
+            closeModal();
+        }
+
+        function editTask(id) {
+            openModal(id);
+        }
+
+        function deleteTask(id) {
+            if (confirm('Bu görevi silmek istediğinizden emin misiniz?')) {
+                tasks = tasks.filter(t => t.id !== id);
+                saveToLocalStorage();
+                renderTasks();
+            }
+        }
+
+        function clearAllTasks() {
+            if (confirm('Tüm görevleri temizlemek istediğinizden emin misiniz?')) {
+                tasks = [];
+                saveToLocalStorage();
+                renderTasks();
+            }
+        }
+
+        // Drag and Drop
+        function setupDragAndDrop() {
+            const cards = document.querySelectorAll('.task-card');
+            const columns = document.querySelectorAll('.column-content');
+
+            cards.forEach(card => {
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+            });
+
+            columns.forEach(column => {
+                column.addEventListener('dragover', handleDragOver);
+                column.addEventListener('drop', handleDrop);
+                column.addEventListener('dragenter', handleDragEnter);
+                column.addEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedTask = e.target;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.column-content').forEach(col => {
+                col.classList.remove('drag-over');
+            });
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            if (e.target.classList.contains('column-content')) {
+                e.target.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            if (e.target.classList.contains('column-content')) {
+                e.target.classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+
+            const column = e.target.closest('.column-content');
+            if (!column || !draggedTask) return;
+
+            const taskId = parseInt(draggedTask.dataset.id);
+            const newStatus = column.dataset.status;
+
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.status = newStatus;
+                saveToLocalStorage();
+                renderTasks();
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('task-form').addEventListener('submit', saveTask);
+
+        document.getElementById('modal-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'modal-overlay') {
+                closeModal();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+            if (e.key === 'n' && e.ctrlKey) {
+                e.preventDefault();
+                openModal();
+            }
+        });
+
+        // Initialize
+        loadFromLocalStorage();
+        renderTasks();
+    </script>
+</body>
+</html>
